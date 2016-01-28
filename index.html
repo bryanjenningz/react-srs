@@ -31,7 +31,7 @@
 
     var ChatApp = view({
       getInitialState: function() {
-        return {messages: []};
+        return {messages: [], showModal: false};
       },
       componentWillMount: function() {
         socket.on('chat message', this.appendMessage);
@@ -46,12 +46,18 @@
         this.setState({messages: this.state.messages});
         this.refs.messageContainer.scrollTop = this.refs.messageContainer.scrollHeight;
       },
+      openModal: function() {
+        this.setState({showModal: true});
+      },
+      closeModal: function() {
+        this.setState({showModal: false});
+      },
       render: function() {
         return (
           el('div', {},
             el('ul', {id: 'message-container', ref: 'messageContainer'},
               this.state.messages.map(function(message, i) {
-                return el(Message, {key: i, message: message});
+                return el(Message, {key: i, message: message, openModal: this.openModal, closeModal: this.closeModal, showModal: this.state.showModal});
               }, this)
             ),
             el('form', {onSubmit: this.sendMessage}, 
@@ -64,17 +70,14 @@
     });
 
     var Message = view({
-      getInitialState: function() {
-        return {showModal: false};
-      },
-      editVocab: function() {
-        this.setState({showModal: true})
+      close: function() {
+        this.props.closeModal();
       },
       render: function() {
         return (
-          el('li', {key: this.props.key, onClick: this.editVocab}, 
-            this.props.message,
-            el(Modal, {show: this.state.showModal, text: this.props.message})
+          el('li', {},
+            el('span', {key: this.props.key, onClick: this.props.openModal}, this.props.message),
+            el(Modal, {show: this.props.showModal, text: this.props.message, closeModal: this.close})
           )
         );
       }
@@ -85,6 +88,7 @@
         var vocab = getSelection().toString() || this.props.text;
         savedVocab.push(vocab);
         console.log('Saved: ' + vocab);
+        this.props.closeModal();
       },
       render: function() {
         return (
