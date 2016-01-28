@@ -13,6 +13,9 @@
     #message-container li { padding: 5px 10px; cursor: pointer; }
     #message-container li:nth-child(odd) { background: #eee; }
     #message-container li:nth-child(even) { background: #fff; }
+    .modal-container { width: 400px; height: 180px; background-color: #6FEEEE; position: absolute; top: 50%; left: 50%; margin: -200px; cursor: auto; text-align: center; padding: 10px; }
+    .modal-container .original-message { margin: 20px; background: #eee; height: 70px; word-break: break-word; overflow-y: auto; }
+    .modal-container button { margin: 0 -80px; display: block; width: 160px; height: 45px; cursor: pointer; position: absolute; bottom: 0px; left: 50%; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react-dom.js"></script>
@@ -23,7 +26,10 @@
   <script>
     var socket = io();
     var el = React.createElement.bind(React);
-    var Chat = React.createClass({
+    var view = React.createClass.bind(React);
+    var savedVocab = JSON.parse(localStorage.getItem('savedVocab')) || [];
+
+    var ChatApp = view({
       getInitialState: function() {
         return {messages: []};
       },
@@ -45,7 +51,7 @@
           el('div', {},
             el('ul', {id: 'message-container', ref: 'messageContainer'},
               this.state.messages.map(function(message, i) {
-                return el('li', {key: i}, message);
+                return el(Message, {key: i, message: message});
               }, this)
             ),
             el('form', {onSubmit: this.sendMessage}, 
@@ -56,7 +62,45 @@
         );
       }
     });
-    ReactDOM.render(el(Chat), document.getElementById('content'));
+
+    var Message = view({
+      getInitialState: function() {
+        return {showModal: false};
+      },
+      editVocab: function() {
+        this.setState({showModal: true})
+      },
+      render: function() {
+        return (
+          el('li', {key: this.props.key, onClick: this.editVocab}, 
+            this.props.message,
+            el(Modal, {show: this.state.showModal, text: this.props.message})
+          )
+        );
+      }
+    });
+
+    var Modal = view({
+      saveVocab: function() {
+        var vocab = getSelection().toString() || this.props.text;
+        savedVocab.push(vocab);
+        console.log('Saved: ' + vocab);
+      },
+      render: function() {
+        return (
+          el('div', {
+              className: 'modal-container', 
+              style: {display: (this.props.show ? 'block' : 'none')}
+            },
+            el('div', {}, 'Select the text you want to save, then click "Save"'),
+            el('div', {className: 'original-message'}, this.props.text),
+            el('button', {onClick: this.saveVocab}, 'Save')
+          )
+        );
+      }
+    });
+
+    ReactDOM.render(el(ChatApp), document.getElementById('content'));
   </script>
 </body>
 </html>
