@@ -38,11 +38,12 @@
       appendMessage: function(message) {
         this.state.messages.push(message);
         this.setState({messages: this.state.messages});
+        this.refs.messageContainer.scrollTop = this.refs.messageContainer.scrollHeight;
       },
       render: function() {
         return (
           el('div', {},
-            el('ul', {id: 'message-container'},
+            el('ul', {id: 'message-container', ref: 'messageContainer'},
               this.state.messages.map(function(message, i) {
                 return el('li', {key: i}, message);
               }, this)
