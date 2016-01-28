@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <title>React Socket.IO chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font: 13px Helvetica, Arial; }
+    form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+    form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+    form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+    #message-container { list-style-type: none; margin: 0; padding: 0; }
+    #message-container li { padding: 5px 10px; }
+    #message-container li:nth-child(odd) { background: #eee; }
+    #message-container li:nth-child(even) { background: #fff; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react-dom.js"></script>
+  <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+</head>
+<body>
+  <div id="content"></div>
+  <script>
+    var socket = io();
+    var el = React.createElement.bind(React);
+    var Chat = React.createClass({
+      getInitialState: function() {
+        return {messages: []};
+      },
+      componentWillMount: function() {
+        socket.on('chat message', this.appendMessage);
+      },
+      sendMessage: function(event) {
+        socket.emit('chat message', this.refs.messageBox.value);
+        this.refs.messageBox.value = '';
+        event.preventDefault();
+      },
+      appendMessage: function(message) {
+        this.state.messages.push(message);
+        this.setState({messages: this.state.messages});
+      },
+      render: function() {
+        return (
+          el('div', {},
+            el('ul', {id: 'message-container'},
+              this.state.messages.map(function(message, i) {
+                return el('li', {key: i}, message);
+              }, this)
+            ),
+            el('form', {onSubmit: this.sendMessage}, 
+              el('input', {id: 'm', autoFocus: true, autoComplete: 'off', ref: 'messageBox'}),
+              el('button', {type: 'submit'}, 'Send')
+            )
+          )
+        );
+      }
+    });
+    ReactDOM.render(el(Chat), document.getElementById('content'));
+  </script>
+</body>
+</html>
