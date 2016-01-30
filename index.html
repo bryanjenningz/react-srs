@@ -15,7 +15,10 @@
     #message-container li:nth-child(even) { background: #fff; }
     .modal-container { width: 400px; height: 180px; background-color: #6FEEEE; position: absolute; top: 50%; left: 50%; margin: -200px; cursor: auto; text-align: center; padding: 10px; }
     .modal-container .original-message { margin: 20px; background: #eee; height: 70px; word-break: break-word; overflow-y: auto; }
-    .modal-container button { margin: 0 -80px; display: block; width: 160px; height: 45px; cursor: pointer; position: absolute; bottom: 0px; left: 50%; }
+    .modal-container button { display: block; width: 50%; height: 45px; cursor: pointer; position: absolute; bottom: 0px; }
+    .modal-container #close-button { left: 0; }
+    .modal-container #save-button { right: 0; }
+    #srs-list { height: 200px; width: 400px; border: 4px solid black; overflow-y: auto; word-break: break-word; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react-dom.js"></script>
@@ -27,11 +30,11 @@
     var socket = io();
     var el = React.createElement.bind(React);
     var view = React.createClass.bind(React);
-    var savedVocab = JSON.parse(localStorage.getItem('savedVocab')) || [];
 
     var ChatApp = view({
       getInitialState: function() {
-        return {messages: [], showModal: false, modalText: ''};
+        return {messages: [], showModal: false, modalText: '', 
+          cards: JSON.parse(localStorage.getItem('cards')) || []};
       },
       componentWillMount: function() {
         socket.on('chat message', this.appendMessage);
@@ -53,6 +56,10 @@
       closeModal: function() {
         this.setState({showModal: false});
       },
+      saveCard: function(text) {
+        var id = String(Math.random());
+        this.state.cards.push({id: id, text: text});
+      },
       render: function() {
         return (
           el('div', {},
@@ -65,7 +72,8 @@
               el('input', {id: 'm', autoFocus: true, autoComplete: 'off', ref: 'messageBox'}),
               el('button', {type: 'submit'}, 'Send')
             ),
-            el(Modal, {show: this.state.showModal, text: this.state.modalText, closeModal: this.closeModal})
+            el(Modal, {show: this.state.showModal, text: this.state.modalText, closeModal: this.closeModal, saveCard: this.saveCard}),
+            el(SrsList, {cards: this.state.cards})
           )
         );
       }
@@ -75,7 +83,7 @@
       render: function() {
         return (
           el('li', {},
-            el('span', {key: this.props.id, onClick: () => this.props.openModal(this.props.text)}, this.props.text)
+            el('span', {key: this.props.id, onClick: function() { this.props.openModal(this.props.text); }.bind(this)}, this.props.text)
           )
         );
       }
@@ -84,7 +92,7 @@
     var Modal = view({
       saveVocab: function() {
         var vocab = getSelection().toString() || this.props.text;
-        savedVocab.push(vocab);
+        this.props.saveCard(vocab);
         console.log('Saved: ' + vocab);
         this.props.closeModal();
       },
@@ -96,7 +104,20 @@
             },
             el('div', {}, 'Select the text you want to save, then click "Save"'),
             el('div', {className: 'original-message'}, this.props.text),
-            el('button', {onClick: this.saveVocab}, 'Save')
+            el('button', {id: 'close-button', onClick: this.props.closeModal}, 'Close'),
+            el('button', {id: 'save-button', onClick: this.saveVocab}, 'Save')
+          )
+        );
+      }
+    });
+
+    var SrsList = view({
+      render: function() {
+        return (
+          el('div', {id: 'srs-list'}, 
+            this.props.cards.map(function(card) {
+              return el('div', {key: card.id}, card.text);
+            }, this)
           )
         );
       }
