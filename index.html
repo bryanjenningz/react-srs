@@ -9,10 +9,10 @@
     form { background: #000; padding: 3px; bottom: 0; width: 100%; }
     form input { border: 0; padding: 10px; width: 86%; margin-right: .5%; }
     form button { width: 13%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-    #message-container { list-style-type: none; margin: 0; padding: 0; height: 400px; overflow-y: auto; word-break: break-word; border: 4px solid black; }
-    #message-container li { padding: 5px 10px; cursor: pointer; }
-    #message-container li:nth-child(odd) { background: #eee; }
-    #message-container li:nth-child(even) { background: #fff; }
+    #message-container, ul { list-style-type: none; margin: 0; padding: 0; height: 400px; overflow-y: auto; word-break: break-word; border: 4px solid black; }
+    #message-container li, li { padding: 5px 10px; cursor: pointer; }
+    li:nth-child(odd) { background: #eee; }
+    li:nth-child(even) { background: #fff; }
     .modal-container { width: 400px; height: 180px; background-color: #6FEEEE; position: absolute; top: 50%; left: 50%; margin: -200px; cursor: auto; text-align: center; padding: 10px; }
     .modal-container .original-message { margin: 20px; background: #eee; height: 70px; word-break: break-word; overflow-y: auto; }
     .modal-container button { display: block; width: 50%; height: 45px; cursor: pointer; position: absolute; bottom: 0px; }
@@ -59,6 +59,7 @@
       saveCard: function(text) {
         var id = String(Math.random());
         this.state.cards.push({id: id, text: text});
+        localStorage.setItem('cards', JSON.stringify(this.state.cards));
       },
       render: function() {
         return (
@@ -114,11 +115,19 @@
     var SrsList = view({
       render: function() {
         return (
-          el('div', {id: 'srs-list'}, 
+          el('ul', {id: 'srs-list'},
             this.props.cards.map(function(card) {
-              return el('div', {key: card.id}, card.text);
+              return el(SrsCard, {key: card.id, text: card.text});
             }, this)
           )
+        );
+      }
+    });
+
+    var SrsCard = view({
+      render: function() {
+        return (
+          el('li', {key: this.props.key}, this.props.text)
         );
       }
     });
