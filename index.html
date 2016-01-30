@@ -31,7 +31,7 @@
 
     var ChatApp = view({
       getInitialState: function() {
-        return {messages: [], showModal: false};
+        return {messages: [], showModal: false, modalText: ''};
       },
       componentWillMount: function() {
         socket.on('chat message', this.appendMessage);
@@ -42,12 +42,13 @@
         event.preventDefault();
       },
       appendMessage: function(message) {
-        this.state.messages.push(message);
+        var id = String(Math.random());
+        this.state.messages.push({id: id, text: message});
         this.setState({messages: this.state.messages});
         this.refs.messageContainer.scrollTop = this.refs.messageContainer.scrollHeight;
       },
-      openModal: function() {
-        this.setState({showModal: true});
+      openModal: function(text) {
+        this.setState({showModal: true, modalText: text});
       },
       closeModal: function() {
         this.setState({showModal: false});
@@ -56,28 +57,25 @@
         return (
           el('div', {},
             el('ul', {id: 'message-container', ref: 'messageContainer'},
-              this.state.messages.map(function(message, i) {
-                return el(Message, {key: i, message: message, openModal: this.openModal, closeModal: this.closeModal, showModal: this.state.showModal});
+              this.state.messages.map(function(message) {
+                return el(Message, {key: message.id, id: message.id, text: message.text, openModal: this.openModal});
               }, this)
             ),
             el('form', {onSubmit: this.sendMessage}, 
               el('input', {id: 'm', autoFocus: true, autoComplete: 'off', ref: 'messageBox'}),
               el('button', {type: 'submit'}, 'Send')
-            )
+            ),
+            el(Modal, {show: this.state.showModal, text: this.state.modalText, closeModal: this.closeModal})
           )
         );
       }
     });
 
     var Message = view({
-      close: function() {
-        this.props.closeModal();
-      },
       render: function() {
         return (
           el('li', {},
-            el('span', {key: this.props.key, onClick: this.props.openModal}, this.props.message),
-            el(Modal, {show: this.props.showModal, text: this.props.message, closeModal: this.close})
+            el('span', {key: this.props.id, onClick: () => this.props.openModal(this.props.text)}, this.props.text)
           )
         );
       }
