@@ -6,6 +6,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font: 13px Helvetica, Arial; }
     #content { width: 400px; height: 400px; margin: 0 auto; }
+    #user-info { margin-top: 20px; }
     #user-info > input { width: 100%; padding: 7px; text-align: center; margin-bottom: 1px; }
     #user-info > button { width: 100%; cursor: pointer; }
     #edit-user-info { width: 100%; border: none; padding: 10px; background: rgb(130, 224, 255); cursor: pointer; }
@@ -43,13 +44,13 @@
         socket.on('chat message', this.appendMessage);
       },
       sendMessage: function(event) {
-        socket.emit('chat message', this.refs.messageBox.value);
+        socket.emit('chat message', {author: this.props.userInfo.name, text: this.refs.messageBox.value});
         this.refs.messageBox.value = '';
         event.preventDefault();
       },
       appendMessage: function(message) {
         var id = String(Math.random());
-        this.state.messages.push({id: id, text: message});
+        this.state.messages.push({id: id, author: message.author, text: message.text});
         this.setState({messages: this.state.messages});
         this.refs.messageContainer.scrollTop = this.refs.messageContainer.scrollHeight;
       },
@@ -66,10 +67,10 @@
       },
       render: function() {
         return (
-          el('div', {},
+          el('div', {style: {display: this.props.shown ? 'block' : 'none'}},
             el('ul', {id: 'message-container', ref: 'messageContainer'},
               this.state.messages.map(function(message) {
-                return el(Message, {key: message.id, id: message.id, text: message.text, openModal: this.openModal});
+                return el(Message, {key: message.id, id: message.id, text: message.text, author: message.author, openModal: this.openModal});
               }, this)
             ),
             el('form', {className: 'chat-form', onSubmit: this.sendMessage}, 
@@ -87,6 +88,8 @@
       render: function() {
         return (
           el('li', {},
+            el('span', {}, this.props.author),
+            ': ',
             el('span', {key: this.props.id, onClick: function() { this.props.openModal(this.props.text); }.bind(this)}, this.props.text)
           )
         );
@@ -136,6 +139,12 @@
     });
 
     var SaveUserInfo = view({
+      componentWillMount: function() {
+        this.info = Object.assign({}, this.props.info);
+      },
+      componentWillReceiveProps: function() {
+        this.info = Object.assign({}, this.props.info);
+      },
       onSubmit: function(event) {
         event.preventDefault();
         var keys = ['name', 'country', 'speaks', 'learning'];
@@ -163,10 +172,10 @@
             el('div', {style: {display: this.props.isEditing ? 'block' : 'none'}}, 
               el('h2', {}, 'Type in your language information so you can learn languages!'),
               el('form', {id: 'user-info', onSubmit: this.onSubmit},
-                el('input', {ref: 'name', placeholder: 'Name'}),
-                el('input', {ref: 'country', placeholder: 'Country'}),
-                el('input', {ref: 'speaks', placeholder: 'Your native language'}),
-                el('input', {ref: 'learning', placeholder: 'The language you want to learn'}),
+                el('input', {ref: 'name', placeholder: 'Name', value: this.info.name || '', onChange: function(e) { throw {}; }}), // Hack to prevent the field from being read-only
+                el('input', {ref: 'country', placeholder: 'Country', value: this.info.country || '', onChange: function(e) { throw {}; }}),
+                el('input', {ref: 'speaks', placeholder: 'Your native language', value: this.info.speaks || '', onChange: function(e) { throw {}; }}),
+                el('input', {ref: 'learning', placeholder: 'The language you want to learn', value: this.info.learning || '', onChange: function(e) { throw {}; }}),
                 el('button', {type: 'submit'}, 'DONE!')
               )
             ),
@@ -193,7 +202,7 @@
         return (
           el('div', {},
             el(SaveUserInfo, {isEditing: this.state.isEditingInfo, saveInfo: this.saveUserInfo, toggle: this.toggleEditing, info: this.state.userInfo}),
-            el(ChatApp, {shown: !this.state.isEditingInfo})
+            el(ChatApp, {shown: !this.state.isEditingInfo, userInfo: this.state.userInfo})
           )
         );
       }
