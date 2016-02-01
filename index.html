@@ -9,7 +9,7 @@
     #user-info { margin-top: 20px; }
     #user-info > input { width: 100%; padding: 7px; text-align: center; margin-bottom: 1px; }
     #user-info > button { width: 100%; cursor: pointer; }
-    #edit-user-info { width: 100%; border: none; padding: 10px; background: rgb(130, 224, 255); cursor: pointer; }
+    #edit-user-info, .toggle-button { width: 100%; border: none; padding: 10px; background: rgb(130, 224, 255); cursor: pointer; }
     form { background: #000; padding: 3px; bottom: 0; width: 100%; }
     form input { border: 0; padding: 10px; width: 86%; margin-right: .5%; }
     form button { width: 13%; background: rgb(130, 224, 255); border: none; padding: 10px; }
@@ -23,6 +23,8 @@
     .modal-container #close-button { left: 0; }
     .modal-container #save-button { right: 0; }
     #srs-list { height: 200px; width: 400px; border: 4px solid black; overflow-y: auto; word-break: break-word; }
+    .friend-list { border: 4px solid black; }
+    .friend-list-entry > span { text-align: center; width: 25%; display: inline-block; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.6/react-dom.js"></script>
@@ -185,11 +187,51 @@
       }
     });
 
+    var HiddenView = view({
+      render: function() {
+        return (
+          el('div', {},
+            el('div', {style: {display: this.props.isHidden ? 'none': 'block'}},
+              el('button', {className: 'toggle-button', onClick: this.props.toggle}, 'Hide'),
+              el('div', this.props.view.attr, this.props.view.inner),
+              el(this.props.view.el, Object.assign({}, this.props.view.attr), this.props.view.inner)
+            ),
+            el('button', {className: 'toggle-button', style: {display: this.props.isHidden ? 'block' : 'none'}, onClick: this.props.toggle}, this.props.buttonText)
+          )
+        );
+      }
+    });
+
+    var FriendList = view({
+      render: function() {
+        return (
+          el('ul', {className: 'friend-list'}, 
+            this.props.friends.map(function(friend) {
+              return el(Friend, {name: friend.name, country: friend.country, speaks: friend.speaks, learning: friend.learning});
+            })
+          )
+        );
+      }
+    });
+
+    var Friend = view({
+      render: function() {
+        return (
+          el('li', {className: 'friend-list-entry'}, 
+            el('span', {}, this.props.name),
+            el('span', {}, this.props.country),
+            el('span', {}, this.props.speaks),
+            el('span', {}, this.props.learning)
+          )
+        );
+      }
+    });
+
     var App = view({
       getInitialState: function() {
         var info = JSON.parse(localStorage.getItem('user'));
         var haveUserInfo = !!(info && info.name && info.country && info.speaks && info.learning);
-        return {userInfo: info, isEditingInfo: !haveUserInfo};
+        return {userInfo: info, isEditingInfo: !haveUserInfo, hiddenViews: {friendList: true}};
       },
       saveUserInfo: function(info) {
         localStorage.setItem('user', JSON.stringify(info));
@@ -198,11 +240,26 @@
       toggleEditing: function() {
         this.setState({isEditingInfo: !this.state.isEditingInfo});
       },
+      toggleFriendList: function() {
+        this.state.hiddenViews.friendList = !this.state.hiddenViews.friendList;
+        this.setState({hiddenViews: this.state.hiddenViews});
+      },
       render: function() {
         return (
           el('div', {},
             el(SaveUserInfo, {isEditing: this.state.isEditingInfo, saveInfo: this.saveUserInfo, toggle: this.toggleEditing, info: this.state.userInfo}),
-            el(ChatApp, {shown: !this.state.isEditingInfo, userInfo: this.state.userInfo})
+            el(ChatApp, {shown: !this.state.isEditingInfo, userInfo: this.state.userInfo}),
+            el(HiddenView, {
+              isHidden: this.state.hiddenViews.friendList, 
+              toggle: this.toggleFriendList, 
+              buttonText: 'Show stuff', 
+              view: {el: 'div', attr: {}, inner: el('div', {}, 'This is the stuff that gets shown')}
+            }),
+            el(FriendList, {friends: [
+              {name: 'Abe', country: 'USA', speaks: 'English', learning: 'Spanish'},
+              {name: 'Bart', country: 'Canada', speaks: 'English', learning: 'French'},
+              {name: 'Cody', country: 'Mexico', speaks: 'Spanish', learning: 'English'}
+            ]})
           )
         );
       }
